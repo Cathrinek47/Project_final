@@ -1,5 +1,5 @@
 import mysql.connector
-import random
+
 dbconfig = {'host': 'ich-db.ccegls0svc9m.eu-central-1.rds.amazonaws.com',
     'user': 'ich1',
     'password': 'password',   #ich1_password_ilovedbs
@@ -231,6 +231,32 @@ def key_word_search(cursor_read):
             return films
 
 
+def top_search(cursor_r, cursor_w):
+    request_popular = '''SELECT ROW_NUMBER() OVER (ORDER BY count DESC) AS "rank", request, count
+    FROM (SELECT request, COUNT(request) AS count
+    FROM requests_statistic
+    GROUP BY request 
+    ORDER BY count DESC 
+    LIMIT 5) AS subquery'''
+    cursor_r.execute(request_popular)
+    statistic = cursor_r.fetchall()
+    for id, request, count in statistic:
+         print(f'{id} {request} \n Количество запросов - {count}')
+    return statistic
+
+
+def top_req(statistic, cursor_w):
+    id_input = int(input('Введите номер желаемого запроса: '))
+    for id, request, count in statistic:
+        if id == id_input:
+            cursor_w.execute(request)
+            insert_request(request)
+            popular_request = cursor_w.fetchall()
+            return popular_request
+
+
+
+
 connection_films = connect_to_db(dbconfig)
 cursor_films = connection_films.cursor()
 
@@ -263,13 +289,9 @@ while True:
         all_or_random_print(key_word_res)
 
     elif user_choosing == 'TOP':
-
-        request = '''SELECT request, count(request) as count 
-        FROM requests_statistic GROUP BY request ORDER BY count DESC LIMIT 5'''
-        cursor_requests.execute(request)
-        statistic = cursor_requests.fetchall()
-        for request, count in statistic:
-            print(f'{request} - {count}')
+        top_search_result = top_search(cursor_requests, cursor_films)
+        top_res = top_req(top_search_result, cursor_films)
+        all_or_random_print(top_res)
 
     elif user_choosing == 'STOP':
         print('Спасибо за использование сервиса по поиску кинофильмов. До новых встреч!')
