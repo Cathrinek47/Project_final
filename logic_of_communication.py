@@ -146,7 +146,7 @@ def all_or_random_print(result_request):
                 print(head_table)
                 print('| {:^30} | {:^10} | {:^130} |'.format('НАЗВАНИЕ ФИЛЬМА', 'ГОД ВЫХОДА', 'ОПИСАНИЕ'))
                 print(head_table)
-                for title, year, describtion in result_request[:answer]:
+                for title, year, describtion in result_request[:abs(answer)]:
                     print('| {:^30} | {:^10} | {:<130} |'.format(title, year, describtion))
                 print(head_table)
                 print()
@@ -177,8 +177,8 @@ def actor_search(cursor_read):
     # if res == 'N'
     print()
     print('Вы выбрали поиск по актерам. Если Вы не знаете имя или фамилию, для пропуска нажмите Enter')
-    choosing_actor_firstname = input("Введите имя актера/актрисы: ").upper()
-    choosing_actor_lastname = input("Введите фамилию актера/актрисы: ").upper()
+    choosing_actor_firstname = input("Введите имя актера/актрисы: ").strip().upper()
+    choosing_actor_lastname = input("Введите фамилию актера/актрисы: ").strip().upper()
     print()
     if choosing_actor_firstname != '' and choosing_actor_lastname != '':
         request_a = '''SELECT film.title, film.release_year, film.description FROM actor
@@ -199,7 +199,12 @@ def actor_search(cursor_read):
                                 WHERE actor.last_name=('{}') 
                                 ORDER BY film.release_year'''.format(choosing_actor_lastname)
     else:
-        print('Данные введены некорректно. Попробуйте снова')
+        print('Имя и фамилия не введены. Будут выведены все фильмы')
+        request_a = '''SELECT film.title, film.release_year, film.description FROM actor
+                       JOIN film_actor ON actor.actor_id=film_actor.actor_id
+                       JOIN film ON film.film_id=film_actor.film_id
+                       ORDER BY film.release_year DESC'''
+
     cursor_read.execute(request_a)
     insert_request(request_a)
     films = cursor_films.fetchall()
