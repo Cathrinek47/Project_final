@@ -52,13 +52,29 @@ def categorie_search(cursor_r):
     print('+-------+----------------------+')
 
     print()
-    ID_choos = input("Введите ID интересующей категории/жанра: ")
-    # name_choos = ID_choos
-    # print(f'Вы выбрали жанры в категории {name_choos}')
+    length = len(categories)        #Определяем количество возможных категорий
+
+    while True:
+        try:
+            id_choosing = int(input("Введите ID интересующей категории/жанра: "))
+            if id_choosing not in range(1, length):
+                print(f'Некорректный ввод данных. Ожидается целое число от 1 до {length}')
+            else:
+                break
+        except ValueError:
+                print(f'Некорректный ввод данных. Ожидается целое число от 1 до {length}')
+        except TypeError:
+                print(f'Некорректный ввод данных. Ожидается целое число от 1 до {length}')
+    # finally:
+    return id_choosing
+
+
+def category_request(cursor_r, id):
     request_categ = '''SELECT film.title, film.release_year, film.description FROM film 
-            JOIN film_category ON film.film_id = film_category.film_id 
-            JOIN category ON film_category.category_id = category.category_id 
-            WHERE category.category_id={}'''.format(ID_choos)
+        JOIN film_category ON film.film_id = film_category.film_id 
+        JOIN category ON film_category.category_id = category.category_id 
+        WHERE category.category_id={} 
+        ORDER BY film.title'''.format(id)
     cursor_r.execute(request_categ)
     insert_request(request_categ)
     all_categories_request = cursor_r.fetchall()
@@ -67,14 +83,19 @@ def categorie_search(cursor_r):
 
 def year_search(cursor_r):
     print('Выбран поиск по году выхода фильма')
-    year_choosing = int(input('Введите год выхода интересующих фильмов: '))
-    request_year = '''SELECT film.title, film.release_year, film.description FROM film 
-            WHERE film.release_year=('{}')'''.format(year_choosing)
-    cursor_r.execute(request_year)
-    insert_request(request_year)
-    res = cursor_films.fetchall()
-    print()
-    return res
+    try:
+        year_choosing = int(input('Введите год выхода интересующих фильмов: '))
+        request_year = '''SELECT film.title, film.release_year, film.description FROM film 
+                WHERE film.release_year=('{}')'''.format(year_choosing)
+        cursor_r.execute(request_year)
+        insert_request(request_year)
+        res = cursor_films.fetchall()
+        print()
+        return res
+    except ValueError:
+        print('Некореректный ввод данных. Ожидается целое число')
+    except TypeError:
+        print('Некореректный ввод данных. Ожидается целое число')
 
 
 def category_and_year(cursor_r):
@@ -97,7 +118,8 @@ def category_and_year(cursor_r):
     request_categ = '''SELECT film.title, film.release_year, film.description FROM film 
                 JOIN film_category ON film.film_id = film_category.film_id 
                 JOIN category ON film_category.category_id = category.category_id 
-                WHERE category.category_id={} and film.release_year = {}'''.format(ID_choos, year_choosing)
+                WHERE category.category_id={} and film.release_year = {}
+                ORDER BY film.title'''.format(ID_choos, year_choosing)
     cursor_r.execute(request_categ)
     insert_request(request_categ)
     all_categories_request = cursor_r.fetchall()
@@ -105,28 +127,47 @@ def category_and_year(cursor_r):
 
 
 def all_or_random_print(result_request):
+    head_table = '''+--------------------------------+------------+------------------------------------------------------------------------------------------------------------------------------------+'''
     if result_request:
-        answer = input('''Введите цифру "10" для вывода десяти случайных фильмов из подборки, 
-любое другое значение пиведет к выводу всех результатов:  ''').strip()
-        print()
-        if answer == '10':
-            res_10 = random.choices(result_request, k=10)  # выбор 10 случайных фильмов из подборки
-            print('| {:^30} | {:^10} | {:^130} |'.format('НАЗВАНИЕ ФИЛЬМА', 'ГОД ВЫХОДА', 'ОПИСАНИЕ'))
-            for title, year, describtion in res_10:
-                print('| {:^30} | {:^10} | {:<130} |'.format(title, year, describtion))
-        else:
-            print('| {:^30} | {:^10} | {:^130} |'.format('НАЗВАНИЕ ФИЛЬМА', 'ГОД ВЫХОДА', 'ОПИСАНИЕ'))
+        if len(result_request) <= 10:
+            print(f'Поиск выдал {len(result_request)} результатов.')
+            print(head_table + '\n| {:^30} | {:^10} | {:^130} |'.format('НАЗВАНИЕ ФИЛЬМА', 'ГОД ВЫХОДА', 'ОПИСАНИЕ'))
+            print(head_table)
             for title, year, describtion in result_request:
                 print('| {:^30} | {:^10} | {:<130} |'.format(title, year, describtion))
-        print()
+            print(head_table)
+            print()
+        else:
+            try:
+                answer = int(input(f'''Поиск выдал {len(result_request)} результатов. Cколько результатов вывести на экран?
+    По умолчанию выводится 10 результатов.            
+    Введите число: '''))
+                print()
+                print(head_table)
+                print('| {:^30} | {:^10} | {:^130} |'.format('НАЗВАНИЕ ФИЛЬМА', 'ГОД ВЫХОДА', 'ОПИСАНИЕ'))
+                print(head_table)
+                for title, year, describtion in result_request[:answer]:
+                    print('| {:^30} | {:^10} | {:<130} |'.format(title, year, describtion))
+                print(head_table)
+                print()
+            except:
+                print()
+                print(head_table)
+                print('| {:^30} | {:^10} | {:^130} |'.format('НАЗВАНИЕ ФИЛЬМА', 'ГОД ВЫХОДА', 'ОПИСАНИЕ'))
+                print(head_table)
+                for title, year, describtion in result_request[:10]:
+                    print('| {:^30} | {:^10} | {:<130} |'.format(title, year, describtion))
+                print(head_table)
+                print()
+
     else:
         print('Поиск не дал результатов. Попробуйте еще раз.')
         print()
 
 def actor_search(cursor_read):
-    res_act = input('Вы выбрали поиск по актерам. Хотите просмотреть список актеров? Y/N: ').upper()
+    res_act = input('Вы выбрали поиск по актерам. Если хотите просмотреть список актеров нажмите "Y": ').upper()
     if res_act == 'Y':
-        request_actors = 'SELECT first_name, last_name FROM actor'
+        request_actors = 'SELECT first_name, last_name FROM actor ORDER BY last_name'
         cursor_films.execute(request_actors)
         actors = cursor_films.fetchall()
         print("Список актеров: ")
@@ -143,19 +184,20 @@ def actor_search(cursor_read):
         request_a = '''SELECT film.title, film.release_year, film.description FROM actor
                     JOIN film_actor ON actor.actor_id=film_actor.actor_id
                     JOIN film ON film.film_id=film_actor.film_id
-                    WHERE actor.first_name=('{}') and 
-                    actor.last_name=('{}')'''.format(choosing_actor_firstname, choosing_actor_lastname)
-        # print(request)
+                    WHERE actor.first_name=('{}') and actor.last_name=('{}') 
+                    ORDER BY film.release_year'''.format(choosing_actor_firstname, choosing_actor_lastname)
     elif choosing_actor_firstname != '' and choosing_actor_lastname == '':
         request_a = '''SELECT film.title, film.release_year, film.description FROM actor
                                 JOIN film_actor ON actor.actor_id=film_actor.actor_id
                                 JOIN film ON film.film_id=film_actor.film_id
-                                WHERE actor.first_name=('{}') '''.format(choosing_actor_firstname)
+                                WHERE actor.first_name=('{}') 
+                                ORDER BY film.release_year'''.format(choosing_actor_firstname)
     elif choosing_actor_firstname == '' and choosing_actor_lastname != '':
         request_a = '''SELECT film.title, film.release_year, film.description FROM actor
                                 JOIN film_actor ON actor.actor_id=film_actor.actor_id
                                 JOIN film ON film.film_id=film_actor.film_id
-                                WHERE actor.last_name=('{}')'''.format(choosing_actor_lastname)
+                                WHERE actor.last_name=('{}') 
+                                ORDER BY film.release_year'''.format(choosing_actor_lastname)
     else:
         print('Данные введены некорректно. Попробуйте снова')
     cursor_read.execute(request_a)
@@ -200,7 +242,8 @@ while True:
     user_choosing = menu_and_choosing()
 
     if user_choosing == 'C':
-        res_categories = categorie_search(cursor_films)
+        id_category = categorie_search(cursor_films)
+        res_categories = category_request(cursor_films, id_category)
         all_or_random_print(res_categories)
 
     elif user_choosing == 'Y':
