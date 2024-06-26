@@ -1,4 +1,5 @@
 import mysql.connector
+import random
 dbconfig = {'host': 'ich-db.ccegls0svc9m.eu-central-1.rds.amazonaws.com',
     'user': 'ich1',
     'password': 'password',   #ich1_password_ilovedbs
@@ -23,6 +24,53 @@ def insert_request(current_request):
     connection_requests.commit()
 
 
+def menu_and_choosing():
+    print('''        Меню поиска:
+        Для выбора фильма по жанрам введите: "C"    
+        Для поиска фильмов по имени и/или фамилии актера введите: "A" 
+        Для поиска кинофильмов по году его выхода на экраны введите: "Y" 
+        Для поиска по ключевому слову: "W" 
+        Для вывода топ-5 самых популярных запросов пользователей введите "TOP"
+        Для выхода введите: "STOP" ''')
+    choosing = input('Поле для ввода:   ').strip().upper()
+    return choosing
+
+
+def categorie_search():
+    print("Выбран поиск по жанрам фильма")
+    request_categories = 'SELECT category_id, name FROM category'
+    cursor_films.execute(request_categories)
+    # insert_request(request)
+    categories = cursor_films.fetchall()
+    print("ID   Жанр")
+    for id, name in categories:
+        print(id, name)
+    print()
+    ID_choos = input("Введите ID интересующей категории/жанра: ")
+    request_categ = '''SELECT film.title, film.release_year, film.description FROM film 
+            JOIN film_category ON film.film_id = film_category.film_id 
+            JOIN category ON film_category.category_id = category.category_id 
+            WHERE category.category_id={}'''.format(ID_choos)
+    # print(request)
+    cursor_films.execute(request_categ)
+    insert_request(request_categ)
+    all_categories_request = cursor_films.fetchall()
+    return all_categories_request
+
+
+def all_or_random_print(result_request):
+    answer = input('''Введите цифру "10" для вывода десяти случайных фильмов из подборки, 
+    любое другое значение пиведет к выводу всех результатов: ''').strip()
+    if answer == '10':
+        res_10 = random.choices(result_request, k=10)  # выбор 10 случайных фильмов из подборки
+        for title, year, describtion in res_10:
+            print(f'Фильм "{title}" - год выхода: {year}\nОписание: {describtion}')
+    else:
+        for title, year, describtion in result_request:
+            print(f'Фильм "{title}" - год выхода: {year}\nОписание: {describtion}')
+    print()
+
+
 connection_films = connect_to_db(dbconfig)
 cursor_films = connection_films.cursor()
 
@@ -31,36 +79,11 @@ cursor_requests = connection_requests.cursor()
 
 print('Добро пожаловать в сервис кинопоиска! Ввод осуществляется латинскими буквами.')
 while True:
-    print('''        Меню поиска:
-        Для выбора фильма по жанрам введите: "C"    
-        Для поиска фильмов по имени и/или фамилии актера введите: "A" 
-        Для поиска кинофильмов по году его выхода на экраны введите: "Y" 
-        Для поиска по ключевому слову: "W" 
-        Для вывода топ-5 самых популярных запросов пользователей введите "TOP"
-        Для выхода введите: "STOP" ''')
-    user_choosing = input('Поле для ввода:   ').strip().upper()
+    user_choosing = menu_and_choosing()
+
     if user_choosing == 'C':
-        print("Выбран поиск по жанрам фильма")
-        request = 'SELECT category_id, name FROM category'
-        cursor_films.execute(request)
-        # insert_request(request)
-        categories = cursor_films.fetchall()
-        print("ID   Жанр")
-        for id, name in categories:
-            print(id, name)
-        print()
-        ID_choosing = input("Введите ID интересующей категории/жанра: ")
-        request = '''SELECT film.title, film.release_year, film.description FROM film 
-        JOIN film_category ON film.film_id = film_category.film_id 
-        JOIN category ON film_category.category_id = category.category_id 
-        WHERE category.category_id={}'''.format(ID_choosing)
-        # print(request)
-        cursor_films.execute(request)
-        insert_request(request)
-        res = cursor_films.fetchall()
-        for title, year, describtion in res[:10]:
-            print(f'Фильм "{title}" - год выхода: {year}\nОписание: {describtion}')
-        print()
+        res_categories = categorie_search()
+        all_or_random_print(res_categories)
 
     elif user_choosing == 'A':
         print()
